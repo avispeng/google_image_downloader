@@ -5,10 +5,15 @@ import json
 import urllib2
 import sys
 import time
+import signal
 
 # adding path to geckodriver to the OS environment variable
 os.environ["PATH"] += os.pathsep + os.getcwd()
 download_path = "dataset/"
+
+def handler(signum, frame):
+    raise Exception("url opening process is hanging for too long.")
+
 
 def main():
 	searchtext = sys.argv[1]
@@ -53,8 +58,10 @@ def main():
 		try:
 			if img_type not in extensions:
 				img_type = "jpg"
+			signal.alarm(50) # if hanging over 50 sec, raise exception
 			req = urllib2.Request(img_url, headers=headers)
 			raw_img = urllib2.urlopen(req).read()
+			signal.alarm(0) # disable the alarm
 			f = open(download_path+searchtext.replace(" ", "_")+"/"+str(downloaded_img_count)+"."+img_type, "wb")
 			f.write(raw_img)
 			f.close
@@ -70,4 +77,5 @@ def main():
 	driver.quit()
 
 if __name__ == "__main__":
+	signal.signal(signal.SIGALRM, handler)
 	main()
